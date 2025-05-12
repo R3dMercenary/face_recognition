@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento de Individuos - Universidad</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding-top: 2rem;
+        }
+        .card {
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            border: none;
+        }
+        .contenedor-camara {
+            position: relative;
+            margin-bottom: 1rem;
+        }
+        .card-resultado {
+            transition: all 0.3s ease;
+        }
+        .card-resultado:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+        .img-universidad {
+            height: 100px;
+            object-fit: contain;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: white;
+        }
+        .barra-confianza {
+            height: 20px;
+            border-radius: 10px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        .progress-bar {
+            transition: width 1s ease-in-out;
+        }
+        #imagenCapturada {
+            max-width: 100%;
+            border-radius: 8px;
+            margin-top: 20px;
+            border: 2px solid #0d6efd;
+            display: none;
+        }
+        .nombre-modelo {
+            font-weight: bold;
+            color: #0d6efd;
+        }
+        .titulo-universidad {
+            color: #2c3e50;
+            border-bottom: 2px solid #2c3e50;
+            padding-bottom: 5px;
+            margin-bottom: 15px;
+        }
+        .logo-header {
+            height: 200px;
+            width: auto;
+            max-width: 300px;
+            margin: 0 15px;
+            object-fit: contain;
+        }
+        .seccion-imagen-capturada {
+            text-align: center;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border-radius: 8px;
+        }
+        .person-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+        }
+        .face-match {
+            font-weight: bold;
+            color: #28a745;
+        }
+        .face-no-match {
+            font-weight: bold;
+            color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="text-center mb-4">
+            <div class="d-flex justify-content-center align-items-center">
+                <img src="{{ url_for('static', filename='images/unison.png') }}" 
+                     class="logo-header" 
+                     alt="Logo Universidad">
+            </div>
+            <h1 class="display-4 mt-3">Reconocimiento de Individuos</h1>
+            <p class="lead">Sistema de Identificación Facial</p>
+        </div>
+
+        <div class="row">
+            <!-- Cámara en vivo -->
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Cámara en Vivo</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="contenedor-camara">
+                            <img id="videoFeed" src="{{ url_for('video_feed') }}" class="img-fluid rounded" alt="Transmisión en Vivo">
+                        </div>
+                        <div class="d-grid gap-2 mt-3">
+                            <button id="botonCapturar" class="btn btn-primary btn-lg">
+                                Capturar y Analizar Rostro
+                            </button>
+                            <button id="botonRegistrar" class="btn btn-success btn-lg mt-2">
+                                Registrar Nueva Persona
+                            </button>
+                        </div>
+
+                        <!-- Sección para mostrar imagen capturada -->
+                        <div class="seccion-imagen-capturada">
+                            <h5>Imagen Capturada</h5>
+                            <img id="imagenCapturada" src="" class="img-fluid" alt="Imagen Capturada">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Resultados -->
+                <div class="row mt-3" id="seccionResultados" style="display: none;">
+                    <div class="col-md-12">
+                        <div class="card card-resultado">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0">Resultados de Reconocimiento</h5>
+                            </div>
+                            <div class="card-body">
+                                <div id="personInfo">
+                                    <p><span class="nombre-modelo">Identidad:</span> <span id="personName">-</span></p>
+                                    <p><span class="nombre-modelo">Confianza:</span> <span id="personConfidence">-</span>%</p>
+                                    <div class="barra-confianza bg-light">
+                                        <div id="confidenceBar" class="progress-bar bg-success" style="width: 0%"></div>
+                                    </div>
+                                    <div class="person-info" id="additionalInfo" style="display: none;">
+                                        <p><strong>Información adicional:</strong></p>
+                                        <p id="personDetails">No hay información adicional disponible.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Sección de Registro -->
+                <div class="row mt-3" id="seccionRegistro" style="display: none;">
+                    <div class="col-md-12">
+                        <div class="card card-resultado">
+                            <div class="card-header bg-warning text-dark">
+                                <h5 class="mb-0">Registrar Nueva Persona</h5>
+                            </div>
+                            <div class="card-body">
+                                <form id="registrationForm">
+                                    <div class="mb-3">
+                                        <label for="nombrePersona" class="form-label">Nombre completo</label>
+                                        <input type="text" class="form-control" id="nombrePersona" required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="informacionAdicional" class="form-label">Información adicional</label>
+                                        <textarea class="form-control" id="informacionAdicional" rows="3"></textarea>
+                                    </div>
+                                    <div class="d-grid gap-2">
+                                        <button type="submit" class="btn btn-success">Guardar Registro</button>
+                                        <button type="button" id="cancelarRegistro" class="btn btn-secondary">Cancelar</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Descripción del sistema -->
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Acerca de</h5>
+                    </div>
+                    <div class="card-body">
+                        <h6>Instrucciones de uso</h6>
+                        <ol class="mb-4">
+                            <li class="mb-2">Presiona <strong>"Capturar y Analizar Rostro"</strong> para identificar a una persona</li>
+                            <li class="mb-2">El sistema comparará el rostro con la base de datos</li>
+                            <li class="mb-2">Se mostrará la identidad reconocida con su porcentaje de confianza</li>
+                            <li class="mb-2">Para registrar una nueva persona, presiona el botón correspondiente</li>
+                        </ol>
+                        
+                        <hr>
+                        
+                        <h6 class="mt-4">Sobre el sistema</h6>
+                        <div class="mb-3">
+                            <p class="small">Este sistema utiliza reconocimiento facial basado en redes neuronales convolucionales para identificar individuos. Se utilizan 2 modelos pre-entrenados: Un modelo YOLO entrenado para detectar rostros, y un modelo de FaceNet que reconoce los rostros tal cuál.</p>
+                            <p class="small mt-2">El sistema puede funcionar en tiempo real con una cámara web estándar en condiciones de iluminación adecuada.</p>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <p class="mb-1"><strong>Características técnicas:</strong></p>
+                            <ul class="small">
+                                <li>Detección de rostros </li>
+                                <li>Extracción de características con FaceNet</li>
+                                <li>Base de datos de rostros en tiempo real</li>
+                                <li>Umbral de confianza ajustable (>60% de confianza)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="text-center mt-3">
+                            <img src="{{ url_for('static', filename='images/mcd.png') }}" 
+                                class="img-fluid img-universidad" 
+                                alt="Maestría Ciencia de Datos"
+                                title="Maestría Ciencia de Datos">
+                            <p class="small mt-2">Maestría en Ciencia de Datos</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Botón de captura y análisis
+        document.getElementById('botonCapturar').addEventListener('click', function() {
+            this.disabled = true;
+            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analizando...';
+            
+            fetch('/recognize', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                // Mostrar sección de resultados
+                document.getElementById('seccionResultados').style.display = 'flex';
+                document.getElementById('seccionRegistro').style.display = 'none';
+                
+                // Mostrar resultados de reconocimiento
+                const personName = document.getElementById('personName');
+                const personConfidence = document.getElementById('personConfidence');
+                const confidenceBar = document.getElementById('confidenceBar');
+                const additionalInfo = document.getElementById('additionalInfo');
+                const personDetails = document.getElementById('personDetails');
+                
+                if (data.recognized) {
+                    personName.textContent = data.name;
+                    personName.className = 'face-match';
+                    personConfidence.textContent = data.confidence;
+                    confidenceBar.style.width = data.confidence + '%';
+                    
+                    // Mostrar información adicional si está disponible
+                    if (data.additional_info) {
+                        additionalInfo.style.display = 'block';
+                        personDetails.textContent = data.additional_info;
+                    } else {
+                        additionalInfo.style.display = 'none';
+                    }
+                } else {
+                    personName.textContent = 'No reconocido';
+                    personName.className = 'face-no-match';
+                    personConfidence.textContent = '0';
+                    confidenceBar.style.width = '0%';
+                    additionalInfo.style.display = 'none';
+                }
+                
+                // Mostrar imagen capturada
+                const imagenCapturada = document.getElementById('imagenCapturada');
+                imagenCapturada.src = 'data:image/jpeg;base64,' + data.image;
+                imagenCapturada.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al procesar la imagen');
+            })
+            .finally(() => {
+                this.disabled = false;
+                this.innerHTML = 'Capturar y Analizar Rostro';
+            });
+        });
+
+        // Botón de registro
+        document.getElementById('botonRegistrar').addEventListener('click', function() {
+            document.getElementById('seccionRegistro').style.display = 'flex';
+            document.getElementById('seccionResultados').style.display = 'none';
+            
+            // Capturar imagen para registro
+            fetch('/capture_for_register', {
+                method: 'POST'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    return;
+                }
+                
+                // Mostrar imagen capturada
+                const imagenCapturada = document.getElementById('imagenCapturada');
+                imagenCapturada.src = 'data:image/jpeg;base64,' + data.image;
+                imagenCapturada.style.display = 'block';
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al capturar la imagen');
+            });
+        });
+
+        // Cancelar registro
+        document.getElementById('cancelarRegistro').addEventListener('click', function() {
+            document.getElementById('seccionRegistro').style.display = 'none';
+            document.getElementById('registrationForm').reset();
+        });
+
+        // Formulario de registro
+        document.getElementById('registrationForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const nombre = document.getElementById('nombrePersona').value;
+            const info = document.getElementById('informacionAdicional').value;
+            
+            fetch('/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    name: nombre,
+                    additional_info: info
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Persona registrada exitosamente');
+                    document.getElementById('seccionRegistro').style.display = 'none';
+                    document.getElementById('registrationForm').reset();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Ocurrió un error al registrar la persona');
+            });
+        });
+    </script>
+</body>
+</html>
