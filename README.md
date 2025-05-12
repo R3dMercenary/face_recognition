@@ -34,7 +34,7 @@ La aplicación cuenta con una interfaz web construida con **Flask** y **Bootstra
 ---
 
 ## Estructura del Proyecto
-
+```
 ├── app.py # Servidor Flask
 ├── templates/
 │ └── index.html # Interfaz principal
@@ -45,7 +45,7 @@ La aplicación cuenta con una interfaz web construida con **Flask** y **Bootstra
 ├── facenet_model.h5 # Modelo FaceNet para extracción de embeddings
 └── data/
 └── dataset_face_rec/ # Dataset de entrenamiento
-
+```
 
 ---
 
