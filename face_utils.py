@@ -139,7 +139,7 @@ class FaceRecognitionSystem:
                     distance = np.linalg.norm(query_embedding - known_embedding)
                     confidence = max(0, 1 - distance) * 100
 
-                    if distance < 0.6 and confidence > best_confidence:
+                    if distance < 1 and confidence > best_confidence:
                         best_match = name
                         best_confidence = confidence
                         best_info = self.known_face_info.get(name, {}).get("additional_info", "")
