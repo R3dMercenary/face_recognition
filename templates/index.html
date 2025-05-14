@@ -44,13 +44,6 @@
         .progress-bar {
             transition: width 1s ease-in-out;
         }
-        #imagenCapturada {
-            max-width: 100%;
-            border-radius: 8px;
-            margin-top: 20px;
-            border: 2px solid #0d6efd;
-            display: none;
-        }
         .nombre-modelo {
             font-weight: bold;
             color: #0d6efd;
@@ -67,13 +60,6 @@
             max-width: 300px;
             margin: 0 15px;
             object-fit: contain;
-        }
-        .seccion-imagen-capturada {
-            text-align: center;
-            margin-top: 20px;
-            padding: 15px;
-            background-color: #f0f8ff;
-            border-radius: 8px;
         }
         .person-info {
             margin-top: 15px;
@@ -114,20 +100,6 @@
                         <div class="contenedor-camara">
                             <img id="videoFeed" src="{{ url_for('video_feed') }}" class="img-fluid rounded" alt="Transmisión en Vivo">
                         </div>
-                        <div class="d-grid gap-2 mt-3">
-                            <button id="botonCapturar" class="btn btn-primary btn-lg">
-                                Capturar y Analizar Rostro
-                            </button>
-                            <button id="botonRegistrar" class="btn btn-success btn-lg mt-2">
-                                Registrar Nueva Persona
-                            </button>
-                        </div>
-
-                        <!-- Sección para mostrar imagen capturada -->
-                        <div class="seccion-imagen-capturada">
-                            <h5>Imagen Capturada</h5>
-                            <img id="imagenCapturada" src="" class="img-fluid" alt="Imagen Capturada">
-                        </div>
                     </div>
                 </div>
 
@@ -155,32 +127,6 @@
                     </div>
                 </div>
 
-                <!-- Sección de Registro -->
-                <div class="row mt-3" id="seccionRegistro" style="display: none;">
-                    <div class="col-md-12">
-                        <div class="card card-resultado">
-                            <div class="card-header bg-warning text-dark">
-                                <h5 class="mb-0">Registrar Nueva Persona</h5>
-                            </div>
-                            <div class="card-body">
-                                <form id="registrationForm">
-                                    <div class="mb-3">
-                                        <label for="nombrePersona" class="form-label">Nombre completo</label>
-                                        <input type="text" class="form-control" id="nombrePersona" required>
-                                    </div>
-                                    <div class="mb-3">
-                                        <label for="informacionAdicional" class="form-label">Información adicional</label>
-                                        <textarea class="form-control" id="informacionAdicional" rows="3"></textarea>
-                                    </div>
-                                    <div class="d-grid gap-2">
-                                        <button type="submit" class="btn btn-success">Guardar Registro</button>
-                                        <button type="button" id="cancelarRegistro" class="btn btn-secondary">Cancelar</button>
-                                    </div>
-                                </form>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
 
             <!-- Descripción del sistema -->
@@ -192,10 +138,8 @@
                     <div class="card-body">
                         <h6>Instrucciones de uso</h6>
                         <ol class="mb-4">
-                            <li class="mb-2">Presiona <strong>"Capturar y Analizar Rostro"</strong> para identificar a una persona</li>
-                            <li class="mb-2">El sistema comparará el rostro con la base de datos</li>
+                            <li class="mb-2">El sistema comparará el rostro con la base de datos automáticamente</li>
                             <li class="mb-2">Se mostrará la identidad reconocida con su porcentaje de confianza</li>
-                            <li class="mb-2">Para registrar una nueva persona, presiona el botón correspondiente</li>
                         </ol>
                         
                         <hr>
@@ -231,7 +175,6 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Auto-recognition loop (every 2 seconds)
         setInterval(() => {
             fetch('/recognize', {
                 method: 'POST'
@@ -242,23 +185,21 @@
                     console.warn('Reconocimiento fallido:', data.error);
                     return;
                 }
-    
+
                 const personName = document.getElementById('personName');
                 const personConfidence = document.getElementById('personConfidence');
                 const confidenceBar = document.getElementById('confidenceBar');
                 const additionalInfo = document.getElementById('additionalInfo');
                 const personDetails = document.getElementById('personDetails');
-                const imagenCapturada = document.getElementById('imagenCapturada');
-    
+
                 document.getElementById('seccionResultados').style.display = 'flex';
-                document.getElementById('seccionRegistro').style.display = 'none';
-    
+
                 if (data.recognized) {
                     personName.textContent = data.name;
                     personName.className = 'face-match';
                     personConfidence.textContent = data.confidence;
                     confidenceBar.style.width = data.confidence + '%';
-    
+
                     if (data.info) {
                         additionalInfo.style.display = 'block';
                         personDetails.textContent = typeof data.info === 'string' ? data.info : JSON.stringify(data.info);
@@ -272,70 +213,11 @@
                     confidenceBar.style.width = '0%';
                     additionalInfo.style.display = 'none';
                 }
-    
-                imagenCapturada.style.display = 'none'; // Or update with data.image if provided
             })
             .catch(error => {
                 console.error('Error:', error);
             });
-        }, 2000); // every 2 seconds
-    
-        // Botón de registro (opcional)
-        document.getElementById('botonRegistrar').addEventListener('click', function() {
-            document.getElementById('seccionRegistro').style.display = 'flex';
-            document.getElementById('seccionResultados').style.display = 'none';
-    
-            fetch('/capture_for_register', {
-                method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-                console.log('Imagen capturada para registro:', data.message);
-                document.getElementById('imagenCapturada').style.display = 'none';
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Ocurrió un error al capturar la imagen');
-            });
-        });
-    
-        document.getElementById('cancelarRegistro').addEventListener('click', function() {
-            document.getElementById('seccionRegistro').style.display = 'none';
-            document.getElementById('registrationForm').reset();
-        });
-    
-        document.getElementById('registrationForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-    
-            const nombre = document.getElementById('nombrePersona').value;
-            const info = document.getElementById('informacionAdicional').value;
-    
-            fetch('/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    name: nombre,
-                    info: info
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.message) {
-                    alert('Persona registrada exitosamente');
-                    document.getElementById('seccionRegistro').style.display = 'none';
-                    document.getElementById('registrationForm').reset();
-                } else {
-                    alert('Error: ' + data.error);
-                }
-            })
-            .catch(error => {
-                console.error('Error:', error);
-                alert('Ocurrió un error al registrar la persona');
-            });
-        });
+        }, 2000);
     </script>
-    
 </body>
 </html>
