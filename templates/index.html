@@ -231,42 +231,37 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Botón de captura y análisis
-        document.getElementById('botonCapturar').addEventListener('click', function() {
-            this.disabled = true;
-            this.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Analizando...';
-            
+        // Auto-recognition loop (every 2 seconds)
+        setInterval(() => {
             fetch('/recognize', {
                 method: 'POST'
             })
             .then(response => response.json())
             .then(data => {
                 if (data.error) {
-                    alert('Error: ' + data.error);
+                    console.warn('Reconocimiento fallido:', data.error);
                     return;
                 }
-                
-                // Mostrar sección de resultados
-                document.getElementById('seccionResultados').style.display = 'flex';
-                document.getElementById('seccionRegistro').style.display = 'none';
-                
-                // Mostrar resultados de reconocimiento
+    
                 const personName = document.getElementById('personName');
                 const personConfidence = document.getElementById('personConfidence');
                 const confidenceBar = document.getElementById('confidenceBar');
                 const additionalInfo = document.getElementById('additionalInfo');
                 const personDetails = document.getElementById('personDetails');
-                
+                const imagenCapturada = document.getElementById('imagenCapturada');
+    
+                document.getElementById('seccionResultados').style.display = 'flex';
+                document.getElementById('seccionRegistro').style.display = 'none';
+    
                 if (data.recognized) {
                     personName.textContent = data.name;
                     personName.className = 'face-match';
                     personConfidence.textContent = data.confidence;
                     confidenceBar.style.width = data.confidence + '%';
-                    
-                    // Mostrar información adicional si está disponible
-                    if (data.additional_info) {
+    
+                    if (data.info) {
                         additionalInfo.style.display = 'block';
-                        personDetails.textContent = data.additional_info;
+                        personDetails.textContent = typeof data.info === 'string' ? data.info : JSON.stringify(data.info);
                     } else {
                         additionalInfo.style.display = 'none';
                     }
@@ -277,62 +272,44 @@
                     confidenceBar.style.width = '0%';
                     additionalInfo.style.display = 'none';
                 }
-                
-                // Mostrar imagen capturada
-                const imagenCapturada = document.getElementById('imagenCapturada');
-                imagenCapturada.src = 'data:image/jpeg;base64,' + data.image;
-                imagenCapturada.style.display = 'block';
+    
+                imagenCapturada.style.display = 'none'; // Or update with data.image if provided
             })
             .catch(error => {
                 console.error('Error:', error);
-                alert('Ocurrió un error al procesar la imagen');
-            })
-            .finally(() => {
-                this.disabled = false;
-                this.innerHTML = 'Capturar y Analizar Rostro';
             });
-        });
-
-        // Botón de registro
+        }, 2000); // every 2 seconds
+    
+        // Botón de registro (opcional)
         document.getElementById('botonRegistrar').addEventListener('click', function() {
             document.getElementById('seccionRegistro').style.display = 'flex';
             document.getElementById('seccionResultados').style.display = 'none';
-            
-            // Capturar imagen para registro
+    
             fetch('/capture_for_register', {
                 method: 'POST'
             })
             .then(response => response.json())
             .then(data => {
-                if (data.error) {
-                    alert('Error: ' + data.error);
-                    return;
-                }
-                
-                // Mostrar imagen capturada
-                const imagenCapturada = document.getElementById('imagenCapturada');
-                imagenCapturada.src = 'data:image/jpeg;base64,' + data.image;
-                imagenCapturada.style.display = 'block';
+                console.log('Imagen capturada para registro:', data.message);
+                document.getElementById('imagenCapturada').style.display = 'none';
             })
             .catch(error => {
                 console.error('Error:', error);
                 alert('Ocurrió un error al capturar la imagen');
             });
         });
-
-        // Cancelar registro
+    
         document.getElementById('cancelarRegistro').addEventListener('click', function() {
             document.getElementById('seccionRegistro').style.display = 'none';
             document.getElementById('registrationForm').reset();
         });
-
-        // Formulario de registro
+    
         document.getElementById('registrationForm').addEventListener('submit', function(e) {
             e.preventDefault();
-            
+    
             const nombre = document.getElementById('nombrePersona').value;
             const info = document.getElementById('informacionAdicional').value;
-            
+    
             fetch('/register', {
                 method: 'POST',
                 headers: {
@@ -340,12 +317,12 @@
                 },
                 body: JSON.stringify({
                     name: nombre,
-                    additional_info: info
+                    info: info
                 })
             })
             .then(response => response.json())
             .then(data => {
-                if (data.success) {
+                if (data.message) {
                     alert('Persona registrada exitosamente');
                     document.getElementById('seccionRegistro').style.display = 'none';
                     document.getElementById('registrationForm').reset();
@@ -359,5 +336,6 @@
             });
         });
     </script>
+    
 </body>
 </html>
